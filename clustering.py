@@ -8,8 +8,10 @@ Created on Wed Nov 22 17:56:25 2017
 
 import numpy as np
 import matplotlib.pyplot as plt
-from skimage.io import imread
+from mpl_toolkits.mplot3d import Axes3D
 
+from skimage.io import imread
+import pandas as pd
 
 def plot_classes(labels,lon,lat, alpha=0.5, edge = 'k'):
     """Plot seismic events using Mollweide projection.
@@ -44,4 +46,55 @@ def plot_classes(labels,lon,lat, alpha=0.5, edge = 'k'):
     if np.sum(mask)>0:
         plt.plot(x[mask], y[mask], '.', markersize=1, mew=1,markerfacecolor='w', markeredgecolor=edge)
     plt.axis('off')
+
+def transf_earth_coord(Xs):
+    RADIUS = 6371
+    
+    Xs_xyz = np.zeros((Xs.shape[0], Xs.shape[1] + 1))
+    Xs_xyz[:,:-1] = Xs
+    
+    Xs_xyz[:,0] = RADIUS * np.multiply(np.cos(Xs[:,0] * np.pi/180), np.cos(Xs[:,1] * np.pi/180))
+    Xs_xyz[:,1] = RADIUS * np.multiply(np.cos(Xs[:,0] * np.pi/180), np.sin(Xs[:,1] * np.pi/180))
+    Xs_xyz[:,2] = RADIUS * np.sin(Xs[:,0] * np.pi/180)
+    return Xs_xyz
+
+data = pd.read_csv("tp2_data.csv", na_values='?' , usecols = [2,3,23]).as_matrix()
+
+
+Xs = data[:,:-1]
+Fs = data[:,-1]
+
+Xs = transf_earth_coord(Xs)
+
+fig = plt.figure()
+ax = fig.add_subplot(111, projection = '3d')
+
+ax.scatter(Xs[:,0], Xs[:,1], Xs[:,2], s=5)
+plt.show()
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
