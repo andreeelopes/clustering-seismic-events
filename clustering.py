@@ -95,15 +95,14 @@ Fs = data[:,-1]
 
 Xs_xyz = transf_earth_coord(Xs)
 
-fig = plt.figure(figsize=(6,4))
-ax = fig.add_subplot(111, projection = '3d')
-ax.set_aspect('equal')
-ax.scatter(Xs_xyz[:,0], Xs_xyz[:,1], Xs_xyz[:,2], s=5)
-plt.show()
+#fig = plt.figure(figsize=(6,4))
+#ax = fig.add_subplot(111, projection = '3d')
+#ax.set_aspect('equal')
+#ax.scatter(Xs_xyz[:,0], Xs_xyz[:,1], Xs_xyz[:,2], s=5)
+#plt.show()
 
 def score(X, sample_cluster, i):
-#    sil_score = metr.silhouette_score(Xs_xyz, sample_cluster)
-    sil_score = 1
+    sil_score = metr.silhouette_score(Xs_xyz, sample_cluster)
     adj_rand_score = metr.adjusted_rand_score(Fs , sample_cluster)
     TP,FP,FN,TN = confusion_matrix(sample_cluster) #não sei se se pode dar este nome
     N = len(sample_cluster)
@@ -111,7 +110,7 @@ def score(X, sample_cluster, i):
     precision = TP/(FP + TP)
     recall = TP/(FN + TP)
     F1 = (precision * recall)/(precision + recall)
-    errors.append([i, sil_score,rand_index, precision, recall, F1, adj_rand_score])
+    errors.append([i, sil_score, rand_index, precision, recall, F1, adj_rand_score])
     
     
 def confusion_matrix(sample_cluster):
@@ -132,7 +131,7 @@ def confusion_matrix(sample_cluster):
 #------------K-Means--------------------------
 
 #errors = []
-#for k in np.arange( int(96*0.90), int(96*1.05), 10):
+#for k in np.arange( int(96*0.9), int(96*1.05), 10):
 #    kmeans = KMeans(n_clusters=k).fit(Xs_xyz)
 #   # plot_classes(kmeans.predict(Xs_xyz), Xs[:,1], Xs[:,0])
 #    sample_cluster = kmeans.predict(Xs_xyz)
@@ -144,46 +143,46 @@ def confusion_matrix(sample_cluster):
     
 #------------DBSCAN--------------------------
 
-#----Eps selection---
-min_pts = 4
-nbrs = NearestNeighbors(n_neighbors=min_pts).fit(Xs_xyz)
-distances, indexes = nbrs.kneighbors(Xs_xyz)
-_4_dist = distances[:,-1] #Select distance to the furthest k_point
-ix = _4_dist.argsort()[::-1] #Sort and then invert to be in descending order
-
-plt.figure(1, figsize = (12,8), frameon = False)
-frame = plt.gca()
-plt.title("Sorted K-Dist Graph", fontsize = 20)
-plt.ylabel("K-Dist", fontsize = 15)
-frame.plot(np.arange(_4_dist.shape[0]), _4_dist[ix], "-r")
-frame.axes.get_xaxis().set_ticks([]) # ignore X values
-
-plt.savefig("sorted_k-dist_graph.png")
-plt.show()
-plt.close()
-
-errors = []
-for eps in np.arange(200, 500, 50):
-    print(eps)
-    db = DBSCAN(eps=eps).fit(Xs_xyz)
-    sample_cluster = db.labels_
-    print(sample_cluster.tolist().count(-1))
-#    plot_classes(sample_cluster, Xs[:,1], Xs[:,0])
-    score(Xs_xyz, sample_cluster, eps)
-    
-errors_np = np.array(errors)
-plot_errors(errors_np[:,0], errors_np[:,1:], "Errors_DBSCAN", "ε")
+##----Eps selection---
+#min_pts = 4
+#nbrs = NearestNeighbors(n_neighbors=min_pts).fit(Xs_xyz)
+#distances, indexes = nbrs.kneighbors(Xs_xyz)
+#_4_dist = distances[:,-1] #Select distance to the furthest k_point
+#ix = _4_dist.argsort()[::-1] #Sort and then invert to be in descending order
+#
+#plt.figure(1, figsize = (12,8), frameon = False)
+#frame = plt.gca()
+#plt.title("Sorted K-Dist Graph", fontsize = 20)
+#plt.ylabel("K-Dist", fontsize = 15)
+#frame.plot(np.arange(_4_dist.shape[0]), _4_dist[ix], "-r")
+#frame.axes.get_xaxis().set_ticks([]) # ignore X values
+#
+#plt.savefig("sorted_k-dist_graph.png")
+#plt.show()
+#plt.close()
+#
+#errors = []
+#for eps in np.arange(200, 500, 50):
+#    print(eps)
+#    db = DBSCAN(eps=eps).fit(Xs_xyz)
+#    sample_cluster = db.labels_
+#    print(sample_cluster.tolist().count(-1))
+##    plot_classes(sample_cluster, Xs[:,1], Xs[:,0])
+#    score(Xs_xyz, sample_cluster, eps)
+#    
+#errors_np = np.array(errors)
+#plot_errors(errors_np[:,0], errors_np[:,1:], "Errors_DBSCAN", "ε")
 
 #------------GMM--------------------------
-#errors = []
-#for n_comp in np.arange(2, 100, 20):
-#    gmm = GaussianMixture(n_components=n_comp).fit(Xs_xyz)
-#    sample_cluster = gmm.predict(Xs_xyz)
-#   # plot_classes(sample_cluster, Xs[:,1], Xs[:,0])
-#    score(Xs_xyz, sample_cluster, n_comp)
-#
-#errors_np = np.array(errors)
-#plot_errors(errors_np[:,0], errors_np[:,1:], "Errors_GMM", "#Components")
+errors = []
+for n_comp in np.arange(2, 100, 10):
+    gmm = GaussianMixture(n_components=n_comp).fit(Xs_xyz)
+    sample_cluster = gmm.predict(Xs_xyz)
+   # plot_classes(sample_cluster, Xs[:,1], Xs[:,0])
+    score(Xs_xyz, sample_cluster, n_comp)
+
+errors_np = np.array(errors)
+plot_errors(errors_np[:,0], errors_np[:,1:], "Errors_GMM", "#Components")
 
 
 
