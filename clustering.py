@@ -141,22 +141,28 @@ def confusion_matrix(sample_cluster):
                 
     return TP, FP, FN, TN
 
-#------------K-Means--------------------------
-
+##------------K-Means--------------------------
 errors = []
 for k in np.arange(5, 50, 2):
     kmeans = KMeans(n_clusters=k).fit(Xs_xyz)
-#    plot_classes(kmeans.predict(Xs_xyz), Xs[:,1], Xs[:,0])
     sample_cluster = kmeans.predict(Xs_xyz)
-    
     score(Xs_xyz, sample_cluster, k)
 
 errors_np = np.array(errors)
 plot_errors(errors_np[:,0], errors_np[:,1:], "Errors_K-means" + plot_noise, "Number of clusters")
 
+argmax_ARI = np.argmax(errors_np[:,6])
+best_ARI = errors_np[argmax_ARI, 6]
+best_k = int(errors_np[argmax_ARI, 0])
+
+kmeans = KMeans(n_clusters=best_k).fit(Xs_xyz)
+sample_cluster = kmeans.predict(Xs_xyz)
+plot_classes(sample_cluster, Xs[:,1], Xs[:,0])
+plt.savefig("best_k_" + str(best_k) + "_ARI_" + str(round(best_ARI, 2)) + "_" + plot_noise + ".png", dpi = 300)
+plt.close()
     
-##------------DBSCAN--------------------------
-#
+#------------DBSCAN--------------------------
+
 ##----Eps selection---
 #min_pts = 4
 #nbrs = NearestNeighbors(n_neighbors=min_pts).fit(Xs_xyz)
@@ -173,31 +179,45 @@ plot_errors(errors_np[:,0], errors_np[:,1:], "Errors_K-means" + plot_noise, "Num
 #
 #plt.savefig("sorted_4-dist_graph.png")
 #plt.show()
-#plt.close()
-#
+
+
 errors = []
 for eps in np.arange(100, 400, 20):
-#    print(eps)
     db = DBSCAN(eps=eps).fit(Xs_xyz)
     sample_cluster = db.labels_
-#    print(sample_cluster.tolist().count(-1))
-#    plot_classes(sample_cluster, Xs[:,1], Xs[:,0])
     score(Xs_xyz, sample_cluster, eps)
     
 errors_np = np.array(errors)
 plot_errors(errors_np[:,0], errors_np[:,1:], "Errors_DBSCAN" + plot_noise, "ε")
+
+argmax_ARI = np.argmax(errors_np[:,6])
+best_ARI = errors_np[argmax_ARI, 6]
+best_eps = int(errors_np[argmax_ARI, 0])
+
+db = DBSCAN(eps=best_eps).fit(Xs_xyz)
+sample_cluster = db.labels_
+plot_classes(sample_cluster, Xs[:,1], Xs[:,0])
+plt.savefig("best_ε_" + str(best_eps) + "_ARI_" + str(round(best_ARI, 2)) + "_" + plot_noise + ".png", dpi = 300)
+
+plt.close()
 
 #------------GMM--------------------------
 errors = []
 for n_comp in np.arange(5, 50, 2):
     gmm = GaussianMixture(n_components=n_comp).fit(Xs_xyz)
     sample_cluster = gmm.predict(Xs_xyz)
-    
-       # plot_classes(sample_cluster, Xs[:,1], Xs[:,0])
     score(Xs_xyz, sample_cluster, n_comp)
 
 errors_np = np.array(errors)
 plot_errors(errors_np[:,0], errors_np[:,1:], "Errors_GMM" + plot_noise, "#Components")
 
+argmax_ARI = np.argmax(errors_np[:,6])
+best_ARI = errors_np[argmax_ARI, 6]
+best_n = int(errors_np[argmax_ARI, 0])
 
+gmm = GaussianMixture(n_components=best_n).fit(Xs_xyz)
+sample_cluster = gmm.predict(Xs_xyz)
+plot_classes(sample_cluster, Xs[:,1], Xs[:,0])
+plt.savefig("best_n_" + str(best_n) + "_ARI_" + str(round(best_ARI, 2)) + "_" + plot_noise + ".png", dpi = 300)
 
+plt.close()
