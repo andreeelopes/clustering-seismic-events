@@ -68,8 +68,8 @@ def plot_errors(X, errors, title, xlabel):
     plt.figure(1, figsize = (12,8), frameon = False)
     plt.title(title)
     plt.xlabel(xlabel)
-    
-    #    plt.ylabel("")
+    plt.gca().yaxis.grid(True)
+
     plt.plot(X, errors[:,0],"-r", label = "Silhouette")
     plt.plot(X, errors[:,1],"-y", label = "Rand Index")
     plt.plot(X, errors[:,2],"-b", label = "Precision")
@@ -78,10 +78,11 @@ def plot_errors(X, errors, title, xlabel):
     plt.plot(X, errors[:,5],"-m", label = "Adjusted Rand Index")
 
     x1,x2,y1,y2 = plt.axis()
-    plt.axis((x1,x2,-1,1))
-#    plt.axis((x1,x2,0,1))
+    ymin = -0.25 if xlabel == "ε" else 0 #change scale DBSCAN
+
+    plt.axis((x1,x2,ymin,1))
     
-    plt.legend(fontsize = 15, loc = 'lower right', ncol=1)
+    plt.legend(fontsize = 15, loc = 'upper right', ncol=1)
 
     plt.savefig(title + ".png")
     plt.show()
@@ -90,8 +91,19 @@ def plot_errors(X, errors, title, xlabel):
 
 data = pd.read_csv("tp2_data.csv", usecols = [2,3,23]).as_matrix()
 
-Xs = data[:,:-1]
-Fs = data[:,-1]
+with_noise = True
+
+if with_noise:
+    Xs = data[:,:-1]
+    Fs = data[:,-1]
+    plot_noise = "_with_noise"
+else:
+    Xs = data[:,:-1]
+    mask = data[:,-1] != -1
+    Fs = data[mask, -1]
+    Xs = Xs[mask,:]
+    plot_noise = "_without_noise"
+
 
 Xs_xyz = transf_earth_coord(Xs)
 
@@ -126,23 +138,25 @@ def confusion_matrix(sample_cluster):
             elif(sample_cluster[i] != sample_cluster[j] and Fs[i] == Fs[j]):
                 FN+=1
                 
+                
     return TP, FP, FN, TN
 
 #------------K-Means--------------------------
 
-#errors = []
-#for k in np.arange( int(96*0.9), int(96*1.05), 10):
-#    kmeans = KMeans(n_clusters=k).fit(Xs_xyz)
-#   # plot_classes(kmeans.predict(Xs_xyz), Xs[:,1], Xs[:,0])
-#    sample_cluster = kmeans.predict(Xs_xyz)
-#    
-#    score(Xs_xyz, sample_cluster, k)
-#
-#errors_np = np.array(errors)
-#plot_errors(errors_np[:,0], errors_np[:,1:], "Errors_K-means", "Number of clusters")
+errors = []
+for k in np.arange(5, 50, 2):
+    kmeans = KMeans(n_clusters=k).fit(Xs_xyz)
+#    plot_classes(kmeans.predict(Xs_xyz), Xs[:,1], Xs[:,0])
+    sample_cluster = kmeans.predict(Xs_xyz)
     
-#------------DBSCAN--------------------------
+    score(Xs_xyz, sample_cluster, k)
 
+errors_np = np.array(errors)
+plot_errors(errors_np[:,0], errors_np[:,1:], "Errors_K-means" + plot_noise, "Number of clusters")
+
+    
+##------------DBSCAN--------------------------
+#
 ##----Eps selection---
 #min_pts = 4
 #nbrs = NearestNeighbors(n_neighbors=min_pts).fit(Xs_xyz)
@@ -152,37 +166,38 @@ def confusion_matrix(sample_cluster):
 #
 #plt.figure(1, figsize = (12,8), frameon = False)
 #frame = plt.gca()
-#plt.title("Sorted K-Dist Graph", fontsize = 20)
-#plt.ylabel("K-Dist", fontsize = 15)
-#frame.plot(np.arange(_4_dist.shape[0]), _4_dist[ix], "-r")
+#plt.title("Sorted 4-Dist Graph", fontsize = 20)
+#plt.ylabel("4-Dist", fontsize = 15)
+#frame.plot(np.arange(_4_dist.shape[0]), _4_dist[ix], ".r")
 #frame.axes.get_xaxis().set_ticks([]) # ignore X values
 #
-#plt.savefig("sorted_k-dist_graph.png")
+#plt.savefig("sorted_4-dist_graph.png")
 #plt.show()
 #plt.close()
 #
-#errors = []
-#for eps in np.arange(200, 500, 50):
+errors = []
+for eps in np.arange(100, 400, 20):
 #    print(eps)
-#    db = DBSCAN(eps=eps).fit(Xs_xyz)
-#    sample_cluster = db.labels_
+    db = DBSCAN(eps=eps).fit(Xs_xyz)
+    sample_cluster = db.labels_
 #    print(sample_cluster.tolist().count(-1))
-##    plot_classes(sample_cluster, Xs[:,1], Xs[:,0])
-#    score(Xs_xyz, sample_cluster, eps)
-#    
-#errors_np = np.array(errors)
-#plot_errors(errors_np[:,0], errors_np[:,1:], "Errors_DBSCAN", "ε")
+#    plot_classes(sample_cluster, Xs[:,1], Xs[:,0])
+    score(Xs_xyz, sample_cluster, eps)
+    
+errors_np = np.array(errors)
+plot_errors(errors_np[:,0], errors_np[:,1:], "Errors_DBSCAN" + plot_noise, "ε")
 
 #------------GMM--------------------------
 errors = []
-for n_comp in np.arange(2, 100, 10):
+for n_comp in np.arange(5, 50, 2):
     gmm = GaussianMixture(n_components=n_comp).fit(Xs_xyz)
     sample_cluster = gmm.predict(Xs_xyz)
-   # plot_classes(sample_cluster, Xs[:,1], Xs[:,0])
+    
+       # plot_classes(sample_cluster, Xs[:,1], Xs[:,0])
     score(Xs_xyz, sample_cluster, n_comp)
 
 errors_np = np.array(errors)
-plot_errors(errors_np[:,0], errors_np[:,1:], "Errors_GMM", "#Components")
+plot_errors(errors_np[:,0], errors_np[:,1:], "Errors_GMM" + plot_noise, "#Components")
 
 
 
